@@ -2,15 +2,13 @@
 
 import tensorflow as tf
 import numpy as np
-import numpy.matlib as matlib
 import math
 from libs.activations import lrelu
 from libs.utils import corrupt
 
-DEFAULT_IMAGE_SIZE = 128;
 
-def autoencoder(input_shape=[None, DEFAULT_IMAGE_SIZE*DEFAULT_IMAGE_SIZE*3], # [num_examples, num_bytes]
-                n_filters=[3, 10, 20, 40], # number of filters in each conv layer
+def autoencoder(input_shape=[None, 16384], # [num_examples, num_pixels]
+                n_filters=[1, 10, 10, 10], # number of filters in each conv layer
                 filter_sizes=[3, 3, 3, 3]):
     """Build a deep autoencoder w/ tied weights.
 
@@ -45,14 +43,14 @@ def autoencoder(input_shape=[None, DEFAULT_IMAGE_SIZE*DEFAULT_IMAGE_SIZE*3], # [
         tf.float32, input_shape, name='x')
 
     # ensure 2-d is converted to square tensor.
-    if len(x.get_shape()) == 2: # assuming second dim of input_shape is num_bytes of an example
-        # convert 1D image into 3D and add fifth dimension for num_filters
-        x_dim = np.sqrt(x.get_shape().as_list()[1] / n_filters[0]) # assuming each image is square
+    if len(x.get_shape()) == 2: # assuming second dim of input_shape is num_pixels of an example
+        # convert 1D image into 2D and add fourth dimension for num_filters
+        x_dim = np.sqrt(x.get_shape().as_list()[1]) # assuming each image is square
         if x_dim != int(x_dim): # not a square image
-            raise ValueError('Not a square image')
+            raise ValueError('Unsupported input dimensions')
         x_dim = int(x_dim)
         x_tensor = tf.reshape(
-            x, [-1, x_dim, x_dim, n_filters[0]]) # reshape input samples to m * 2D image * 3 channel * 1 layer for input
+            x, [-1, x_dim, x_dim, n_filters[0]]) # reshape input samples to m * 2D image * 1 layer for input
     elif len(x.get_shape()) == 4: # assuming we already did that
         x_tensor = x
     else: 
@@ -83,7 +81,6 @@ def autoencoder(input_shape=[None, DEFAULT_IMAGE_SIZE*DEFAULT_IMAGE_SIZE*3], # [
     z = current_input
     encoder.reverse() # going backwards for the decoder
     shapes.reverse()
-    print(shapes)
 
     # Build the decoder using the same weights
     for layer_i, shape in enumerate(shapes):
@@ -119,10 +116,15 @@ def test_mandrill():
     mandrill_small = scipy.io.loadmat('mandrill_small.mat')
     mandrill_small = mandrill_small['A']
     mandrill_small = np.array(mandrill_small)
-    mean_img = np.tile(np.mean(mandrill_small, axis=2),(1,1,3));
 
-    mandrill_small = np.reshape(mandrill_small, [1,128*128*3])
-    mean_img = np.reshape(mean_img, [128*128*3])
+    mandrill_small = np.transpose(mandrill_small, [2,0,1])
+    mandrill_small = np.reshape(mandrill_small, [3,128*128])
+    
+
+
+    mean_img = np.mean(mandrill_small, axis=0)
+
+    mandrill_small = np.expand_dims(mandrill_small[1,:],axis=0)
     print(mandrill_small.shape)
 
     ae = autoencoder()
@@ -149,13 +151,14 @@ def test_mandrill():
     test_xs_norm = np.array([img - mean_img for img in test_xs])
     recon = sess.run(ae['y'], feed_dict={ae['x']: test_xs_norm})
     print(recon.shape)
-    fig, axs = plt.subplots(2, n_examples, figsize=(1, 2))
-    axs[0].imshow(
-        np.reshape(test_xs[0, :], (128, 128,3)))
-    axs[1].imshow(
-        np.reshape(
-            np.reshape(recon[0, ...], (3*128**2,)) + mean_img,
-            (128, 128,3)))
+    fig, axs = plt.subplots(2, n_examples, figsize=(10, 2))
+    for example_i in range(n_examples):
+        axs[0].imshow(
+            np.reshape(test_xs[example_i, :], (128, 128)))
+        axs[1].imshow(
+            np.reshape(
+                np.reshape(recon[example_i, ...], (128**2,)) + mean_img,
+                (128, 128)))
     fig.show()
     plt.draw()
     plt.waitforbuttonpress()
