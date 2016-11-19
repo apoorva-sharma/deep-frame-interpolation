@@ -159,7 +159,7 @@ def test_bypass_autoencoder():
 
 def test_frame_interpolator():
     import data_loader
-    dataset = data_loader.load_frame_data()
+    dataset = data_loader.read_data_set()
     mean_img = np.mean(dataset.train.images, axis=0)
 
     fi = frame_interpolator([None,384,384,3])
