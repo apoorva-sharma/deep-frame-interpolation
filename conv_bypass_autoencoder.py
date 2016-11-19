@@ -64,6 +64,42 @@ def autoencoder(input_shape):
     return {'x':x, 'z':z, 'y':y, 'loss':loss}
 
 
+def frame_interpolator(image_shape):
+    x = tf.placeholder(tf.float32, [image_shape[0], image_shape[1], image_shape[2], 2*image_shape[3]], name='x') # input is two images
+    y = tf.placeholder(tf.float32, image_shape, , name='y')
+
+    layer_depths = [10 10 10]
+    filter_sizes = [3 3 3]
+    conv_outputs = []
+
+    current_input = x
+    current_inputdepth = 2*image_shape[3]
+    # convolutional portion
+    for i, outputdepth in enumerate(layer_depths)
+        result = conv_layer(current_input, filter_sizes[i], current_inputdepth, outputdepth)
+        conv_outputs.append(result)
+        current_input = result
+        current_inputdepth = outputdepth
+
+    z = current_input
+
+    layer_depths.reverse()
+    filter_sizes.reverse()
+    conv_outputs.reverse()
+
+    # deconv portion
+    for i, outputdepth in enumerate(layer_depths[:-1]) # reverse process exactly until last step
+        result = deconv_layer(current_input, filter_sizes[i], current_inputdepth, outputdepth)
+        stack = tf.concat(3,[result, conv_outputs[i+1]])
+        current_input = stack
+        current_inputdepth = 2*outputdepth
+
+    yhat = deconv_layer(current_input, filter_sizes[-1], current_inputdepth, image_shape[3])
+
+    # define the loss
+    loss = tf.reduce_sum(tf.square(y-x))
+
+    return {'x':x, 'y':y, 'z':z, 'yhat':yhat, 'loss':loss}
 
 
 
@@ -76,8 +112,6 @@ def test_bypass_autoencoder():
     # load MNIST
     mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
     mean_img = np.mean(mnist.train.images, axis=0)
-
-
 
     ae = autoencoder([None,32,32,1])
 
@@ -123,6 +157,46 @@ def test_bypass_autoencoder():
     plt.waitforbuttonpress()
 
 
+def test_frame_interpolator():
+    import data_loader
+    dataset = data_loader.load_frame_data()
+    mean_img = np.mean(dataset.train.images, axis=0)
+
+    fi = frame_interpolator([None,384,384,3])
+
+    learning_rate = 0.01
+    optimizer = tf.train.AdamOptimizer(learning_rate).minimize(fi['loss'])
+
+    sess = tf.Session()
+    sess.run(tf.initialize_all_variables())
+
+    # Fit all the training data
+    batch_size = 8
+    n_epochs = 10
+    for epoch_i in range(n_epochs):
+        for batch_i in range(mnist.train.num_examples // batch_size):
+            batch_xs, batch_ys = mnist.train.next_batch(batch_size)
+            train_xs = np.array([img - mean_img for img in batch_xs])
+            train_ys = np.array([img - mean_img for img in batch_ys])
+            sess.run(optimizer, feed_dict={fi['x']: train_xs, fi['y']: train_ys})
+        print(epoch_i, sess.run(fi['loss'], feed_dict={fi['x']: train_xs, fi['y']: train_ys}))
+
+    # %%
+    # Plot example reconstructions
+    n_examples = 10
+    test_xs, test_ys = mnist.test.next_batch(n_examples)
+    test_xs_norm = np.array([img - mean_img for img in test_xs])
+    test_ys_norm = np.array([img - mean_img for img in test_ys])
+    recon = sess.run(fi['yhat'], feed_dict={fi['x']: test_xs_norm})
+
+    fig, axs = plt.subplots(3, n_examples, figsize=(10, 2))
+    for example_i in range(n_examples):
+        axs[0][example_i].imshow(np.reshape(0.5*test_xs[example_i,:,:,0:3] + 0.5*text_xs[example_i,:,:,3:6], (384,384,3)))
+        axs[1][example_i].imshow(np.reshape(recon[example_i, ...] + mean_img, (384, 384, 3)))
+        axs[2][example_i].imshow(np.reshape(test_ys[example_i,:,:,:], (384, 384, 3)))
+    fig.show()
+    plt.draw()
+    plt.waitforbuttonpress()
 
 
 if __name__ == '__main__':
