@@ -66,16 +66,16 @@ def autoencoder(input_shape):
 
 def frame_interpolator(image_shape):
     x = tf.placeholder(tf.float32, [image_shape[0], image_shape[1], image_shape[2], 2*image_shape[3]], name='x') # input is two images
-    y = tf.placeholder(tf.float32, image_shape, , name='y')
+    y = tf.placeholder(tf.float32, image_shape, name='y')
 
-    layer_depths = [10 10 10]
-    filter_sizes = [3 3 3]
+    layer_depths = [30, 30, 30]
+    filter_sizes = [3, 3, 3]
     conv_outputs = []
 
     current_input = x
     current_inputdepth = 2*image_shape[3]
     # convolutional portion
-    for i, outputdepth in enumerate(layer_depths)
+    for i, outputdepth in enumerate(layer_depths):
         result = conv_layer(current_input, filter_sizes[i], current_inputdepth, outputdepth)
         conv_outputs.append(result)
         current_input = result
@@ -88,7 +88,7 @@ def frame_interpolator(image_shape):
     conv_outputs.reverse()
 
     # deconv portion
-    for i, outputdepth in enumerate(layer_depths[:-1]) # reverse process exactly until last step
+    for i, outputdepth in enumerate(layer_depths[:-1]): # reverse process exactly until last step
         result = deconv_layer(current_input, filter_sizes[i], current_inputdepth, outputdepth)
         stack = tf.concat(3,[result, conv_outputs[i+1]])
         current_input = stack
@@ -97,7 +97,7 @@ def frame_interpolator(image_shape):
     yhat = deconv_layer(current_input, filter_sizes[-1], current_inputdepth, image_shape[3])
 
     # define the loss
-    loss = tf.reduce_sum(tf.square(y-x))
+    loss = tf.reduce_sum(tf.square(y-yhat))
 
     return {'x':x, 'y':y, 'z':z, 'yhat':yhat, 'loss':loss}
 
@@ -159,48 +159,50 @@ def test_bypass_autoencoder():
 
 def test_frame_interpolator():
     import data_loader
+    import matplotlib.pyplot as plt
+
     dataset = data_loader.read_data_set()
-    mean_img = np.mean(dataset.train.images, axis=0)
+    mean_img = np.mean(dataset.train.labels, axis=0)
 
     fi = frame_interpolator([None,384,384,3])
 
     learning_rate = 0.01
     optimizer = tf.train.AdamOptimizer(learning_rate).minimize(fi['loss'])
 
-    sess = tf.Session()
+    sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
     sess.run(tf.initialize_all_variables())
 
     # Fit all the training data
-    batch_size = 8
+    batch_size = 4
     n_epochs = 10
     for epoch_i in range(n_epochs):
-        for batch_i in range(mnist.train.num_examples // batch_size):
-            batch_xs, batch_ys = mnist.train.next_batch(batch_size)
-            train_xs = np.array([img - mean_img for img in batch_xs])
+        for batch_i in range(dataset.train.num_examples // batch_size):
+            batch_xs, batch_ys = dataset.train.next_batch(batch_size)
+            train_xs = np.array([img - np.tile(mean_img,[1,1,2]) for img in batch_xs])
             train_ys = np.array([img - mean_img for img in batch_ys])
             sess.run(optimizer, feed_dict={fi['x']: train_xs, fi['y']: train_ys})
         print(epoch_i, sess.run(fi['loss'], feed_dict={fi['x']: train_xs, fi['y']: train_ys}))
 
     # %%
     # Plot example reconstructions
-    n_examples = 10
-    test_xs, test_ys = mnist.test.next_batch(n_examples)
-    test_xs_norm = np.array([img - mean_img for img in test_xs])
+    n_examples = 4
+    test_xs, test_ys = dataset.test.next_batch(n_examples)
+    test_xs_norm = np.array([img - np.tile(mean_img,[1,1,2]) for img in test_xs])
     test_ys_norm = np.array([img - mean_img for img in test_ys])
     recon = sess.run(fi['yhat'], feed_dict={fi['x']: test_xs_norm})
 
     fig, axs = plt.subplots(3, n_examples, figsize=(10, 2))
     for example_i in range(n_examples):
-        axs[0][example_i].imshow(np.reshape(0.5*test_xs[example_i,:,:,0:3] + 0.5*text_xs[example_i,:,:,3:6], (384,384,3)))
-        axs[1][example_i].imshow(np.reshape(recon[example_i, ...] + mean_img, (384, 384, 3)))
-        axs[2][example_i].imshow(np.reshape(test_ys[example_i,:,:,:], (384, 384, 3)))
+        axs[0][example_i].imshow((np.reshape(0.5*test_xs[example_i,:,:,0:3] + 0.5*test_xs[example_i,:,:,3:6], (384,384,3)))/255)
+        axs[1][example_i].imshow((np.reshape(recon[example_i, ...] + mean_img, (384, 384, 3)))/255)
+        axs[2][example_i].imshow((np.reshape(test_ys[example_i,:,:,:], (384, 384, 3)))/255)
     fig.show()
     plt.draw()
     plt.waitforbuttonpress()
 
 
 if __name__ == '__main__':
-    test_bypass_autoencoder()
+    test_frame_interpolator()
 
 
 
