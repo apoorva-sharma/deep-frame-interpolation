@@ -68,8 +68,8 @@ def frame_interpolator(image_shape):
     x = tf.placeholder(tf.float32, [image_shape[0], image_shape[1], image_shape[2], 2*image_shape[3]], name='x') # input is two images
     y = tf.placeholder(tf.float32, image_shape, name='y')
 
-    layer_depths = [30, 30, 30]
-    filter_sizes = [3, 3, 3]
+    layer_depths = [20, 20, 20, 20]
+    filter_sizes = [3, 3, 3, 3]
     conv_outputs = []
 
     current_input = x
