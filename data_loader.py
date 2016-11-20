@@ -57,8 +57,7 @@ def read_data_set():
 	train_targets = []
 
 	# load data into train_inputs/targets
-	for itr in range(int(len(image_paths)/3)):
-		i = itr*3
+	for i in range(len(image_paths)-2):
 		
 		before_target = np.array(misc.imread(image_paths[i]))
 		target = np.array(misc.imread(image_paths[i+1]))
