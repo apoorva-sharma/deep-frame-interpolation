@@ -53,7 +53,7 @@ def read_data_set():
 
 	image_paths = glob.glob("./IMG/*.png")
 	image_paths.sort()
-	[print(i) for i in image_paths]
+	# [print(i) for i in image_paths]
 
 	train_inputs = []
 	train_targets = []

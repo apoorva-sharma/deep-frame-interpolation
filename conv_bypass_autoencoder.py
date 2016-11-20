@@ -202,7 +202,7 @@ def test_frame_interpolator():
         axs[1][example_i].imshow((np.reshape(recon[example_i, ...] + mean_img, (384, 384, 3)))/255)
         axs[2][example_i].imshow((np.reshape(test_ys[example_i,:,:,:], (384, 384, 3)))/255)
 
-    fig.savefig('display.svg')
+    fig.savefig('yomama.pdf')
 
 
 if __name__ == '__main__':
