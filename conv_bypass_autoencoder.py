@@ -2,6 +2,7 @@
 import tensorflow as tf
 import numpy as np
 import math
+import msssim
 
 def weight_variable(shape):
   initial = tf.truncated_normal(shape, stddev=0.1)
@@ -39,6 +40,7 @@ def deconv_layer(input, filtersize, inputdepth, outputdepth):
     h_deconv_layer1 = tf.nn.relu(deconv2d(input, height, width, outputdepth, W_deconv_layer1) + b_deconv_layer1)
     return h_deconv_layer1
 
+
 def autoencoder(input_shape):
     x = tf.placeholder(tf.float32, input_shape, name='x') # m * n*n * 3
     print(tf.rank(x))
@@ -68,8 +70,8 @@ def frame_interpolator(image_shape):
     x = tf.placeholder(tf.float32, [image_shape[0], image_shape[1], image_shape[2], 2*image_shape[3]], name='x') # input is two images
     y = tf.placeholder(tf.float32, image_shape, name='y')
 
-    layer_depths = [10, 20, 30]
-    filter_sizes = [3, 3, 3]
+    layer_depths = [10, 20, 30, 60, 120]
+    filter_sizes = [3, 3, 3, 3, 3]
     conv_outputs = []
 
     current_input = x
@@ -98,8 +100,9 @@ def frame_interpolator(image_shape):
 
     # define the loss
     epsilon = 0.1
-    loss = tf.sqrt( tf.nn.l2_loss(y - yhat) + (epsilon ** 2))
-    # loss = tf.reduce_sum(tf.square(y-yhat))
+    # loss = tf.sqrt( tf.nn.l2_loss(y - yhat) + (epsilon ** 2))
+    loss = tf.reduce_mean(tf.square(y-yhat))
+    # loss = msssim.MultiScaleSSIM(np.array(y),np.array(yhat))
 
     return {'x':x, 'y':y, 'z':z, 'yhat':yhat, 'loss':loss}
 
