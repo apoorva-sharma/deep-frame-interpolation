@@ -187,7 +187,7 @@ def test_frame_interpolator():
 
 
     # Fit all the training data
-    batch_size = 2
+    batch_size = 5
     n_epochs = 1
     n_examples = dataset.test.num_examples
     for epoch_i in range(n_epochs):
