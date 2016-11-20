@@ -68,8 +68,8 @@ def frame_interpolator(image_shape):
     x = tf.placeholder(tf.float32, [image_shape[0], image_shape[1], image_shape[2], 2*image_shape[3]], name='x') # input is two images
     y = tf.placeholder(tf.float32, image_shape, name='y')
 
-    layer_depths = [20, 20, 20, 20]
-    filter_sizes = [3, 3, 3, 3]
+    layer_depths = [60, 60, 60, 60, 60]
+    filter_sizes = [3, 3, 3, 3, 3]
     conv_outputs = []
 
     current_input = x
@@ -97,7 +97,9 @@ def frame_interpolator(image_shape):
     yhat = deconv_layer(current_input, filter_sizes[-1], current_inputdepth, image_shape[3])
 
     # define the loss
-    loss = tf.reduce_sum(tf.square(y-yhat))
+    epsilon = 0.1
+    loss = tf.sqrt( tf.nn.l2_loss(y - yhat) + (epsilon ** 2))
+    # loss = tf.reduce_sum(tf.square(y-yhat))
 
     return {'x':x, 'y':y, 'z':z, 'yhat':yhat, 'loss':loss}
 
@@ -169,11 +171,12 @@ def test_frame_interpolator():
     learning_rate = 0.01
     optimizer = tf.train.AdamOptimizer(learning_rate).minimize(fi['loss'])
 
-    sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
+    # sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
+    sess = tf.Session()
     sess.run(tf.initialize_all_variables())
 
     # Fit all the training data
-    batch_size = 4
+    batch_size = 10
     n_epochs = 10
     for epoch_i in range(n_epochs):
         for batch_i in range(dataset.train.num_examples // batch_size):
