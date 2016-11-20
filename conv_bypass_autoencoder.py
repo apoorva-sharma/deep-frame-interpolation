@@ -201,15 +201,8 @@ def test_frame_interpolator():
         axs[0][example_i].imshow((np.reshape(0.5*test_xs[example_i,:,:,0:3] + 0.5*test_xs[example_i,:,:,3:6], (384,384,3)))/255)
         axs[1][example_i].imshow((np.reshape(recon[example_i, ...] + mean_img, (384, 384, 3)))/255)
         axs[2][example_i].imshow((np.reshape(test_ys[example_i,:,:,:], (384, 384, 3)))/255)
-<<<<<<< HEAD
-    # fig.show()
-    # plt.draw()
-    # plt.waitforbuttonpress()
+
     fig.savefig('display.svg')
-    fig.savefig('display.svg')
-=======
-    fig.savefig('yomama.pdf')
->>>>>>> b86dadb5a37ac7855f4a9c99b8ff5ad7061c5541
 
 
 if __name__ == '__main__':
