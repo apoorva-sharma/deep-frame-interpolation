@@ -161,6 +161,8 @@ def test_bypass_autoencoder():
 
 def test_frame_interpolator():
     import data_loader
+    import matplotlib
+    matplotlib.use('Agg')
     import matplotlib.pyplot as plt
 
     dataset = data_loader.read_data_set()
@@ -199,9 +201,10 @@ def test_frame_interpolator():
         axs[0][example_i].imshow((np.reshape(0.5*test_xs[example_i,:,:,0:3] + 0.5*test_xs[example_i,:,:,3:6], (384,384,3)))/255)
         axs[1][example_i].imshow((np.reshape(recon[example_i, ...] + mean_img, (384, 384, 3)))/255)
         axs[2][example_i].imshow((np.reshape(test_ys[example_i,:,:,:], (384, 384, 3)))/255)
-    fig.show()
-    plt.draw()
-    plt.waitforbuttonpress()
+    # fig.show()
+    # plt.draw()
+    # plt.waitforbuttonpress()
+    fig.savefig('display.svg')
 
 
 if __name__ == '__main__':
