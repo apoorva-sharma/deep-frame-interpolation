@@ -177,15 +177,33 @@ def test_frame_interpolator():
     sess = tf.Session()
     sess.run(tf.initialize_all_variables())
 
+    # log learning performance
+    train_set_size = [0]
+    train_perf = [0]
+    test_perf = [0]
+
+
     # Fit all the training data
-    batch_size = 10
+    batch_size = 2
     n_epochs = 1
+    n_examples = dataset.test.num_examples
     for epoch_i in range(n_epochs):
         for batch_i in range(dataset.train.num_examples // batch_size):
+            train_set_size.append(train_set_size[-1]+batch_size);
             batch_xs, batch_ys = dataset.train.next_batch(batch_size)
             train_xs = np.array([img - np.tile(mean_img,[1,1,2]) for img in batch_xs])
             train_ys = np.array([img - mean_img for img in batch_ys])
+
             sess.run(optimizer, feed_dict={fi['x']: train_xs, fi['y']: train_ys})
+
+            train_perf.append(sess.run(fi['loss'], feed_dict={fi['x']: train_xs, fi['y']: train_ys}))
+
+            test_xs, test_ys = dataset.test.next_batch(n_examples)
+            test_xs_norm = np.array([img - np.tile(mean_img,[1,1,2]) for img in test_xs])
+            test_ys_norm = np.array([img - mean_img for img in test_ys])
+            test_perf.append(sess.run(fi['loss'], feed_dict={fi['x']: test_xs_norm, fi['y']: test_ys_norm}))
+
+
         print(epoch_i, sess.run(fi['loss'], feed_dict={fi['x']: train_xs, fi['y']: train_ys}))
 
     # %%
@@ -203,6 +221,14 @@ def test_frame_interpolator():
         axs[2][example_i].imshow((np.reshape(test_ys[example_i,:,:,:], (384, 384, 3)))/255)
 
     fig.savefig('yomama.pdf')
+
+    plt.subplot(111)
+    plt.plot(train_set_size[1:], train_perf[1:], 'r', train_set_size[1:], test_perf[1:], 'b')
+    plt.title('Learning Curve')
+    plt.ylabel('Loss')
+    plt.xlabel('Training Set Size')
+    plt.savefig('learning_curve.pdf')
+
 
 
 if __name__ == '__main__':
