@@ -61,9 +61,9 @@ def read_data_set():
 	# load data into train_inputs/targets
 	for i in range(len(image_paths)-2):
 		
-		before_target = np.array(misc.imread(image_paths[i]))
-		target = np.array(misc.imread(image_paths[i+1]))
-		after_target = np.array(misc.imread(image_paths[i+2]))
+		before_target = 255-np.array(misc.imread(image_paths[i]))
+		target = 255-np.array(misc.imread(image_paths[i+1]))
+		after_target = 255-np.array(misc.imread(image_paths[i+2]))
 		
 		x = np.concatenate((before_target,after_target),axis = 2)
 
