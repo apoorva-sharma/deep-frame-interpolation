@@ -68,8 +68,8 @@ def frame_interpolator(image_shape):
     x = tf.placeholder(tf.float32, [image_shape[0], image_shape[1], image_shape[2], 2*image_shape[3]], name='x') # input is two images
     y = tf.placeholder(tf.float32, image_shape, name='y')
 
-    layer_depths = [10, 20, 30]
-    filter_sizes = [3, 3, 3]
+    layer_depths = [80, 80, 80, 160, 160]
+    filter_sizes = [3, 3, 3, 3, 3, 3]
     conv_outputs = []
 
     current_input = x
@@ -177,7 +177,7 @@ def test_frame_interpolator():
 
     # Fit all the training data
     batch_size = 10
-    n_epochs = 2
+    n_epochs = 1
     for epoch_i in range(n_epochs):
         for batch_i in range(dataset.train.num_examples // batch_size):
             batch_xs, batch_ys = dataset.train.next_batch(batch_size)
@@ -194,14 +194,12 @@ def test_frame_interpolator():
     test_ys_norm = np.array([img - mean_img for img in test_ys])
     recon = sess.run(fi['yhat'], feed_dict={fi['x']: test_xs_norm})
 
-    fig, axs = plt.subplots(3, n_examples, figsize=(10, 2))
+    fig, axs = plt.subplots(3, n_examples, figsize=(12, 8))
     for example_i in range(n_examples):
         axs[0][example_i].imshow((np.reshape(0.5*test_xs[example_i,:,:,0:3] + 0.5*test_xs[example_i,:,:,3:6], (384,384,3)))/255)
         axs[1][example_i].imshow((np.reshape(recon[example_i, ...] + mean_img, (384, 384, 3)))/255)
         axs[2][example_i].imshow((np.reshape(test_ys[example_i,:,:,:], (384, 384, 3)))/255)
-    fig.show()
-    plt.draw()
-    plt.waitforbuttonpress()
+    fig.savefig('yomama.pdf')
 
 
 if __name__ == '__main__':
