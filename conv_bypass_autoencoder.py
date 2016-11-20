@@ -68,8 +68,8 @@ def frame_interpolator(image_shape):
     x = tf.placeholder(tf.float32, [image_shape[0], image_shape[1], image_shape[2], 2*image_shape[3]], name='x') # input is two images
     y = tf.placeholder(tf.float32, image_shape, name='y')
 
-    layer_depths = [60, 60, 60, 60, 60]
-    filter_sizes = [3, 3, 3, 3, 3]
+    layer_depths = [10, 20, 30]
+    filter_sizes = [3, 3, 3]
     conv_outputs = []
 
     current_input = x
@@ -88,7 +88,7 @@ def frame_interpolator(image_shape):
     conv_outputs.reverse()
 
     # deconv portion
-    for i, outputdepth in enumerate(layer_depths[:-1]): # reverse process exactly until last step
+    for i, outputdepth in enumerate(layer_depths[1:]): # reverse process exactly until last step
         result = deconv_layer(current_input, filter_sizes[i], current_inputdepth, outputdepth)
         stack = tf.concat(3,[result, conv_outputs[i+1]])
         current_input = stack
@@ -177,7 +177,7 @@ def test_frame_interpolator():
 
     # Fit all the training data
     batch_size = 10
-    n_epochs = 10
+    n_epochs = 2
     for epoch_i in range(n_epochs):
         for batch_i in range(dataset.train.num_examples // batch_size):
             batch_xs, batch_ys = dataset.train.next_batch(batch_size)
