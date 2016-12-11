@@ -66,47 +66,6 @@ def autoencoder(input_shape):
     return {'x':x, 'z':z, 'y':y, 'loss':loss}
 
 
-def frame_interpolator(image_shape):
-    x = tf.placeholder(tf.float32, [image_shape[0], image_shape[1], image_shape[2], 2*image_shape[3]], name='x') # input is two images
-    y = tf.placeholder(tf.float32, image_shape, name='y')
-
-    layer_depths = [20, 40, 80, 160, 320]
-    filter_sizes = [3, 3, 3, 3, 3]
-    conv_outputs = []
-
-    current_input = x
-    current_inputdepth = 2*image_shape[3]
-    # convolutional portion
-    for i, outputdepth in enumerate(layer_depths):
-        result = conv_layer(current_input, filter_sizes[i], current_inputdepth, outputdepth)
-        conv_outputs.append(result)
-        current_input = result
-        current_inputdepth = outputdepth
-
-    z = current_input
-
-    layer_depths.reverse()
-    filter_sizes.reverse()
-    conv_outputs.reverse()
-
-    # deconv portion
-    for i, outputdepth in enumerate(layer_depths[1:]): # reverse process exactly until last step
-        result = deconv_layer(current_input, filter_sizes[i], current_inputdepth, outputdepth)
-        stack = tf.concat(3,[result, conv_outputs[i+1]])
-        current_input = stack
-        current_inputdepth = 2*outputdepth
-
-    yhat = deconv_layer(current_input, filter_sizes[-1], current_inputdepth, image_shape[3])
-
-    # define the loss
-    epsilon = 0.1
-    # loss = tf.sqrt( tf.nn.l2_loss(y - yhat) + (epsilon ** 2))
-    loss = tf.reduce_mean(tf.square(y-yhat))
-    # loss = msssim.MultiScaleSSIM(np.array(y),np.array(yhat))
-
-    return {'x':x, 'y':y, 'z':z, 'yhat':yhat, 'loss':loss}
-
-
 
 def test_bypass_autoencoder():
     import tensorflow as tf
@@ -162,80 +121,8 @@ def test_bypass_autoencoder():
     plt.waitforbuttonpress()
 
 
-def test_frame_interpolator():
-    import data_loader
-    import matplotlib
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
-
-    dataset = data_loader.read_data_set()
-    mean_img = 0*np.mean(dataset.train.labels, axis=0)
-
-    fi = frame_interpolator([None,384,384,3])
-
-    learning_rate = 0.01
-    optimizer = tf.train.AdamOptimizer(learning_rate).minimize(fi['loss'])
-
-    # sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
-    sess = tf.Session()
-    sess.run(tf.initialize_all_variables())
-
-    # log learning performance
-    train_set_size = [0]
-    train_perf = [0]
-    test_perf = [0]
-
-
-    # Fit all the training data
-    batch_size = 10
-    n_epochs = 10
-    n_examples = dataset.test.num_examples
-    for epoch_i in range(n_epochs):
-        for batch_i in range(dataset.train.num_examples // batch_size):
-            train_set_size.append(train_set_size[-1]+batch_size);
-            batch_xs, batch_ys = dataset.train.next_batch(batch_size)
-            train_xs = np.array([img - np.tile(mean_img,[1,1,2]) for img in batch_xs])
-            train_ys = np.array([img - mean_img for img in batch_ys])
-
-            sess.run(optimizer, feed_dict={fi['x']: train_xs, fi['y']: train_ys})
-
-            train_perf.append(sess.run(fi['loss'], feed_dict={fi['x']: train_xs, fi['y']: train_ys}))
-
-            test_xs, test_ys = dataset.test.next_batch(n_examples)
-            test_xs_norm = np.array([img - np.tile(mean_img,[1,1,2]) for img in test_xs])
-            test_ys_norm = np.array([img - mean_img for img in test_ys])
-            test_perf.append(sess.run(fi['loss'], feed_dict={fi['x']: test_xs_norm, fi['y']: test_ys_norm}))
-
-
-        print(epoch_i, sess.run(fi['loss'], feed_dict={fi['x']: train_xs, fi['y']: train_ys}))
-
-    # %%
-    # Plot example reconstructions
-    n_examples = 4
-    test_xs, test_ys = dataset.test.next_batch(n_examples)
-    test_xs_norm = np.array([img - np.tile(mean_img,[1,1,2]) for img in test_xs])
-    test_ys_norm = np.array([img - mean_img for img in test_ys])
-    recon = sess.run(fi['yhat'], feed_dict={fi['x']: test_xs_norm})
-
-    fig, axs = plt.subplots(3, n_examples, figsize=(12, 8))
-    for example_i in range(n_examples):
-        axs[0][example_i].imshow((np.reshape(0.5*test_xs[example_i,:,:,0:3] + 0.5*test_xs[example_i,:,:,3:6], (384,384,3)))/255)
-        axs[1][example_i].imshow((np.reshape(recon[example_i, ...] + mean_img, (384, 384, 3)))/255)
-        axs[2][example_i].imshow((np.reshape(test_ys[example_i,:,:,:], (384, 384, 3)))/255)
-
-    fig.savefig('yomama.pdf')
-
-    plt.subplot(111)
-    plt.plot(train_set_size[1:], train_perf[1:], 'r', train_set_size[1:], test_perf[1:], 'b')
-    plt.title('Learning Curve')
-    plt.ylabel('Loss')
-    plt.xlabel('Training Set Size')
-    plt.savefig('learning_curve.pdf')
-
-
-
 if __name__ == '__main__':
-    test_frame_interpolator()
+    test_bypass_autoencoder()
 
 
 

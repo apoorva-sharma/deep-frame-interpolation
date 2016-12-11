@@ -49,8 +49,7 @@ class DataSet(object):
 		return self._images[start:end], self._labels[start:end]
 
 
-def read_data_set():
-
+def read_data_set(downsample_factor=1):
 	image_paths = glob.glob("./IMG/*.png")
 	image_paths.sort()
 	# [print(i) for i in image_paths]
@@ -60,11 +59,15 @@ def read_data_set():
 
 	# load data into train_inputs/targets
 	for i in range(len(image_paths)-2):
-		
 		before_target = 255-np.array(misc.imread(image_paths[i]))
 		target = 255-np.array(misc.imread(image_paths[i+1]))
 		after_target = 255-np.array(misc.imread(image_paths[i+2]))
 		
+		if downsample_factor > 1:
+			before_target = before_target[::downsample_factor,::downsample_factor,:];
+			target = target[::downsample_factor,::downsample_factor,:];
+			after_target = after_target[::downsample_factor,::downsample_factor,:];
+
 		x = np.concatenate((before_target,after_target),axis = 2)
 
 		train_inputs.append(x)
