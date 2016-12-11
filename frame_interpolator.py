@@ -47,7 +47,7 @@ def frame_interpolator(image_shape):
     x = tf.placeholder(tf.float32, [image_shape[0], image_shape[1], image_shape[2], 2*image_shape[3]], name='x') # input is two images
     y = tf.placeholder(tf.float32, image_shape, name='y')
 
-    layer_depths = [20, 40, 80, 160, 320]
+    layer_depths = [20, 40, 80, 160, 160]
     filter_sizes = [3, 3, 3, 3, 3]
     conv_outputs = []
 
@@ -111,7 +111,7 @@ def test_frame_interpolator():
 
     # Fit all the training data
     batch_size = 10
-    n_epochs = 20
+    n_epochs = 100
     n_examples = dataset.test.num_examples
     for epoch_i in range(n_epochs):
         for batch_i in range(dataset.train.num_examples // batch_size):
