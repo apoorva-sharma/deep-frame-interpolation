@@ -146,7 +146,6 @@ def decompress(saved_frames, trained_net, sess):
     full_recon_vid_shape = list(saved_frames.shape)
     full_recon_vid_shape[0] = full_recon_vid_shape[0]*2 - 1
     full_recon_vid = zeros(full_recon_vid_shape)
-
     full_recon_vid[::2,:,:,:] = saved_frames
     full_recon_vid[1:-1:2,:,:,:] = output_frames
 
@@ -183,13 +182,14 @@ def save_vid(vid_frames, filename):
 def main():
     video_data = load_video('./SampleVid4')
     sess = tf.Session()
-    # trained_net = network_trainer(video_data['training_inputs'], 
-    #      video_data['training_targets'], sess)
-    trained_net = frame_interpolator([None,384,384,3])
+
+    #trained_net = network_trainer(video_data['training_inputs'], 
+         #video_data['training_targets'], sess)
+    trained_net = frame_interpolator([None,192,192,3])
     saver = tf.train.Saver()
-    # save_path = saver.save(sess, "saved_net.ckpt")
-    # print("Model saved in file: %s" % save_path)
-    saver.restore(sess, "saved_net_samplevid2.ckpt")
+    #save_path = saver.save(sess, "saved_net.ckpt")
+    #print("Model saved in file: %s" % save_path)
+    saver.restore(sess, "saved_net_sample_vid.ckpt")
 
     recon_vid = decompress(video_data['frames_to_save'],
         trained_net, sess)
