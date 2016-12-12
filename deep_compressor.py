@@ -4,6 +4,8 @@ import math
 import glob
 import msssim
 from scipy import misc
+import matplotlib.animation as animation
+from pylab import *
 
 from frame_interpolator import *
 
@@ -12,19 +14,9 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 def normalize_frames(frames, medians):
-    diff = frames - medians
-    thresh = 1
-    mask = np.all((np.abs(diff)>thresh), axis = 3, keepdims=True)
-    mask = np.tile(mask,[1,1,1,3])
-    # return mask*frames;
-    return diff
+    return frames - medians
 
 def unnormalize_frames(frames, medians):
-    # frames = np.maximum(np.zeros(frames.shape), frames)
-    # thresh = 8
-    # mask = np.all((np.abs(frames)<=thresh), axis = 3, keepdims=True)
-    # mask = np.tile(mask,[1,1,1,3])
-    # return mask*medians + np.logical_not(mask)*frames;
     return frames + medians
 
 
@@ -111,47 +103,86 @@ def network_trainer(training_inputs, training_targets, sess):
 
             sess.run(optimizer, feed_dict={fi['x']: batch_xs, fi['y']: batch_ys})
 
-        print(epoch_i, sess.run(fi['loss'], feed_dict={fi['x']: batch_xs, fi['y']: batch_ys}))
+        print(epoch_i, sess.run(fi['loss'], feed_dict={fi['x']: training_inputs, fi['y']: training_targets}))
 
     return fi
 
 def decompress(saved_frames, trained_net, sess):
-    # compute median
+    # compute median and missing frames
     (network_inputs, medians) = compile_input_data(saved_frames)
     network_outputs = sess.run(trained_net['yhat'], 
         feed_dict={trained_net['x']: network_inputs})
-    #output_frames = network_outputs + medians
-    import scipy.io
-    scipy.io.savemat('networkout.mat', mdict={'network_outputs': network_outputs,
-        'medians':medians})
+
+    # import scipy.io
+    # scipy.io.savemat('networkout.mat', mdict={'network_outputs': network_outputs,
+    #     'medians':medians})
 
     output_frames = unnormalize_frames(network_outputs, medians)
-    return output_frames
 
+    # img_width = output_frames[1,:,:,:].shape[1]
+    # fig, axs = plt.subplots(3, 4, figsize=(12, 8))
+    # for plot_i, example_i in enumerate([7, 89, 91, 100]):
+    #     axs[0][plot_i].imshow((np.reshape(0.5*video_data['frames_to_save'][example_i,:,:,:] + 0.5*video_data['frames_to_save'][example_i+1,:,:,:], (img_width,img_width,3)))/255)
+    #     axs[1][plot_i].imshow((np.reshape(output_frames[example_i, ...], (img_width, img_width, 3)))/255)
+    #     axs[2][plot_i].imshow((np.reshape(video_data['training_targets'][example_i,:,:,:], (img_width, img_width, 3)))/255)
+
+    # plt.show()
+    # fig.savefig('jomama.pdf')
+
+    # interleave saved frames with generated frames
+    full_recon_vid_shape = list(saved_frames.shape)
+    full_recon_vid_shape[0] = full_recon_vid_shape[0]*2 - 1
+    full_recon_vid = zeros(full_recon_vid_shape)
+
+    full_recon_vid[::2,:,:,:] = saved_frames
+    full_recon_vid[1:-1:2,:,:,:] = output_frames
+
+    return full_recon_vid
+
+
+def save_vid(vid_frames, filename):
+    dpi = 100
+    img_width = vid_frames.shape[1]
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.set_aspect('equal')
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+
+    im = ax.imshow(rand(img_width,img_width,3))
+    im.set_clim([0,1])
+    fig.set_size_inches([img_width/dpi,img_width/dpi])
+
+    tight_layout()
+
+    def update_img(n):
+        tmp = np.minimum(vid_frames[n,:,:,:]/255,np.ones(vid_frames[n,:,:,:].shape))
+        tmp = np.maximum(tmp, np.zeros(tmp.shape))
+        im.set_data(tmp)
+        return im
+
+    ani = animation.FuncAnimation(fig, update_img, vid_frames.shape[0], interval=30)
+    writer = animation.writers['ffmpeg'](fps=30)
+
+    ani.save(filename,writer=writer,dpi=dpi)
+    return ani
 
 def main():
     video_data = load_video('./SampleVid')
     sess = tf.Session()
-    trained_net = network_trainer(video_data['training_inputs'], 
-        video_data['training_targets'], sess)
-    
+    #trained_net = network_trainer(video_data['training_inputs'], 
+         #video_data['training_targets'], sess)
+    trained_net = frame_interpolator([None,192,192,3])
     saver = tf.train.Saver()
-    save_path = saver.save(sess, "saved_net.ckpt")
-    print("Model saved in file: %s" % save_path)
-    
-    output_frames = decompress(video_data['frames_to_save'],
+    #save_path = saver.save(sess, "saved_net.ckpt")
+    #print("Model saved in file: %s" % save_path)
+    saver.restore(sess, "saved_net_sample_vid.ckpt")
+
+    recon_vid = decompress(video_data['frames_to_save'],
         trained_net, sess)
 
-    img_width = output_frames[1,:,:,:].shape[1]
-    fig, axs = plt.subplots(3, 4, figsize=(12, 8))
-    for plot_i, example_i in enumerate([7, 89, 91, 100]):
-        axs[0][plot_i].imshow((np.reshape(0.5*video_data['frames_to_save'][example_i,:,:,:] + 0.5*video_data['frames_to_save'][example_i+1,:,:,:], (img_width,img_width,3)))/255)
-        axs[1][plot_i].imshow((np.reshape(output_frames[example_i, ...], (img_width, img_width, 3)))/255)
-        axs[2][plot_i].imshow((np.reshape(video_data['training_targets'][example_i,:,:,:], (img_width, img_width, 3)))/255)
-
-    plt.show()
-    fig.savefig('jomama.pdf')
-
+    save_vid(recon_vid, "test.mp4")
 
 
 
