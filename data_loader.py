@@ -80,7 +80,7 @@ def read_data_set(downsample_factor=1):
 
 	## split into train, test, validation
 	dataset_size = len(train_inputs)
-	test_size = int(0.15*dataset_size)
+	test_size = int(0.15*(dataset_size))
 	validation_size = test_size
 
 	# shuffle data
