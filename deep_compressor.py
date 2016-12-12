@@ -40,9 +40,6 @@ def compute_medians(saved_frames,window_size):
         median_frame = np.median(oned_frames, axis=0)
         median_frame = np.reshape(median_frame, frame_shape)
         medians[i] = median_frame
-    import scipy.io
-    scipy.io.savemat('medians.mat', mdict={'saved_frames': saved_frames,
-        'medians':medians})
 
     return medians[:-1,:,:,:]
 
