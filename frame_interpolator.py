@@ -52,7 +52,9 @@ def final_deconv_layer(input, filtersize, inputdepth, outputdepth):
 
     W_deconv_layer1 = weight_variable([filtersize, filtersize, outputdepth, inputdepth])
     b_deconv_layer1 = bias_variable([outputdepth])
-    h_deconv_layer1 = tf.nn.relu(deconv2d(input, height, width, outputdepth, W_deconv_layer1) + b_deconv_layer1);
+    # h_deconv_layer1 = 255*tf.nn.tanh(deconv2d(input, height, width, outputdepth, W_deconv_layer1) + b_deconv_layer1);
+    h_deconv_layer1 = (deconv2d(input, height, width, outputdepth, W_deconv_layer1) + b_deconv_layer1);
+    # h_deconv_layer1 = (255/3)*(tf.nn.relu6(deconv2d(input, height, width, outputdepth, W_deconv_layer1) + b_deconv_layer1)-3);
 
     #W_conv_layer1 = weight_variable([filtersize, filtersize, outputdepth, outputdepth])
     #b_conv_layer1 = bias_variable([outputdepth])
@@ -92,12 +94,14 @@ def frame_interpolator(image_shape):
         current_input = stack
         current_inputdepth = 2*outputdepth
 
-    yhat = deconv_layer(current_input, filter_sizes[-1], current_inputdepth, image_shape[3])
+    yhat = final_deconv_layer(current_input, filter_sizes[-1], current_inputdepth, image_shape[3])
 
     # define the loss
     epsilon = 0.1
-    # loss = tf.sqrt( tf.nn.l2_loss(y - yhat) + (epsilon ** 2))
-    loss = tf.reduce_mean(tf.square(y-yhat))
+    loss = tf.sqrt( tf.nn.l2_loss(y - yhat) + (epsilon ** 2))
+    noise_penalty = 10
+    # loss = tf.add(tf.reduce_mean(tf.square(y-yhat)),
+    #     noise_penalty*tf.reduce_mean(tf.mul( tf.square(yhat), tf.exp(-tf.square(yhat))  )))
     # loss = msssim.MultiScaleSSIM(np.array(y),np.array(yhat))
 
     return {'x':x, 'y':y, 'z':z, 'yhat':yhat, 'loss':loss}
