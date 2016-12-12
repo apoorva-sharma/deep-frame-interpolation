@@ -16,14 +16,16 @@ def normalize_frames(frames, medians):
     thresh = 1
     mask = np.all((np.abs(diff)>thresh), axis = 3, keepdims=True)
     mask = np.tile(mask,[1,1,1,3])
-    return mask*frames;
+    # return mask*frames;
+    return diff
 
 def unnormalize_frames(frames, medians):
-    frames = np.maximum(np.zeros(frames.shape), frames)
-    thresh = 8
-    mask = np.all((np.abs(frames)<=thresh), axis = 3, keepdims=True)
-    mask = np.tile(mask,[1,1,1,3])
-    return mask*medians + np.logical_not(mask)*frames;
+    # frames = np.maximum(np.zeros(frames.shape), frames)
+    # thresh = 8
+    # mask = np.all((np.abs(frames)<=thresh), axis = 3, keepdims=True)
+    # mask = np.tile(mask,[1,1,1,3])
+    # return mask*medians + np.logical_not(mask)*frames;
+    return frames + medians
 
 
 def compile_input_data(saved_frames):
@@ -89,7 +91,7 @@ def network_trainer(training_inputs, training_targets, sess):
     sess.run(tf.initialize_all_variables())
 
     # Fit all the training data
-    n_epochs = 200
+    n_epochs = 150
     n_examples = training_inputs.shape[0]
     print(n_examples)
     batch_size = 7
@@ -128,7 +130,7 @@ def decompress(saved_frames, trained_net, sess):
 
 
 def main():
-    video_data = load_video('./IMG')
+    video_data = load_video('./SampleVid')
     sess = tf.Session()
     trained_net = network_trainer(video_data['training_inputs'], 
         video_data['training_targets'], sess)
@@ -142,11 +144,12 @@ def main():
 
     img_width = output_frames[1,:,:,:].shape[1]
     fig, axs = plt.subplots(3, 4, figsize=(12, 8))
-    for plot_i, example_i in enumerate([7, 19, 36, 47]):
+    for plot_i, example_i in enumerate([7, 89, 91, 100]):
         axs[0][plot_i].imshow((np.reshape(0.5*video_data['frames_to_save'][example_i,:,:,:] + 0.5*video_data['frames_to_save'][example_i+1,:,:,:], (img_width,img_width,3)))/255)
         axs[1][plot_i].imshow((np.reshape(output_frames[example_i, ...], (img_width, img_width, 3)))/255)
         axs[2][plot_i].imshow((np.reshape(video_data['training_targets'][example_i,:,:,:], (img_width, img_width, 3)))/255)
 
+    plt.show()
     fig.savefig('jomama.pdf')
 
 
