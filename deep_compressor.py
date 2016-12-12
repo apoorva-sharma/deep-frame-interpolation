@@ -23,12 +23,9 @@ def compute_medians(saved_frames,window_size):
     num_frames = saved_frames.shape[0]
     frame_shape = saved_frames[1,:,:,:].shape
     frame_size = saved_frames[1,:,:,:].size
-<<<<<<< HEAD
     # medians = np.tile(saved_frames[1,:,:,:], [num_frames,1,1,1])
     medians = []
-=======
-    medians = 0*saved_frames
->>>>>>> 1411486... good stuff huh
+
     for i in range(num_frames):
         window_inds = range(max(i-window_size//2,0),
             min(i+window_size//2 + 1,num_frames))
@@ -36,15 +33,9 @@ def compute_medians(saved_frames,window_size):
          [-1, frame_size])
         median_frame = np.median(oned_frames, axis=0)
         median_frame = np.reshape(median_frame, frame_shape)
-<<<<<<< HEAD
         medians.append(median_frame)
 
     return np.array(medians)[:-1,:,:,:]
-=======
-        medians[i] = median_frame
-
-    return medians[:-1,:,:,:]
->>>>>>> 1411486... good stuff huh
 
 
 def compile_input_data(saved_frames):
@@ -55,22 +46,7 @@ def compile_input_data(saved_frames):
     before_frames = saved_frames[0:-1,:,:,:]
     after_frames = saved_frames[1:,:,:,:]
 
-    # oned_frames = np.reshape(saved_frames, [-1, frame_size])
-    # median_frame = np.median(oned_frames, axis=0)
-    # median_frame = np.reshape(median_frame, frame_shape)
-<<<<<<< HEAD
-
-    # medians1 = np.tile(median_frame, [n_frames-1,1,1,1])
-
     medians = compute_medians(saved_frames,20)
-
-    # print(np.sum(medians - medians1))
-=======
-
-    # medians = np.tile(median_frame, [n_frames-1,1,1,1])
-
-    medians = compute_medians(saved_frames,10)
->>>>>>> 1411486... good stuff huh
 
     # before_norm = 255 - before_frames
     # after_norm = 255 - after_frames
@@ -150,6 +126,7 @@ def decompress(saved_frames, trained_net, sess):
     (network_inputs, medians) = compile_input_data(saved_frames)
     network_outputs = sess.run(trained_net['yhat'], 
         feed_dict={trained_net['x']: network_inputs})
+
     output_frames = unnormalize_frames(network_outputs, medians)
     import scipy.io
     scipy.io.savemat('networkout_gen2.mat', mdict={'frames_to_save': saved_frames,
@@ -174,7 +151,6 @@ def decompress(saved_frames, trained_net, sess):
     full_recon_vid[1:-1:2,:,:,:] = output_frames
 
     return full_recon_vid
-
 
 def save_vid(vid_frames, filename):
     dpi = 100
