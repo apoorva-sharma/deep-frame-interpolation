@@ -42,9 +42,6 @@ def compute_medians(saved_frames,window_size):
     return np.array(medians)[:-1,:,:,:]
 =======
         medians[i] = median_frame
-    import scipy.io
-    scipy.io.savemat('medians.mat', mdict={'saved_frames': saved_frames,
-        'medians':medians})
 
     return medians[:-1,:,:,:]
 >>>>>>> 1411486... good stuff huh
