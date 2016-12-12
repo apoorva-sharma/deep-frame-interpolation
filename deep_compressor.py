@@ -104,7 +104,7 @@ def network_trainer(training_inputs, training_targets, sess):
     sess.run(tf.initialize_all_variables())
 
     # Fit all the training data
-    n_epochs = 50
+    n_epochs = 200
     n_examples = training_inputs.shape[0]
     print(n_examples)
     batch_size = 7
