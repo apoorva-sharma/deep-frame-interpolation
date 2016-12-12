@@ -2,6 +2,9 @@ import tensorflow as tf
 import numpy as np
 import math
 import msssim
+import matplotlib
+#matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 def weight_variable(shape):
     initial = tf.truncated_normal(shape, stddev=0.1)
@@ -38,17 +41,33 @@ def deconv_layer(input, filtersize, inputdepth, outputdepth):
     b_deconv_layer1 = bias_variable([outputdepth])
     h_deconv_layer1 = tf.nn.relu(deconv2d(input, height, width, outputdepth, W_deconv_layer1) + b_deconv_layer1)
 
-    W_conv_layer1 = weight_variable([filtersize, filtersize, outputdepth, outputdepth])
-    b_conv_layer1 = bias_variable([outputdepth])
-    h_conv_layer1 = tf.nn.relu(conv2d(h_deconv_layer1, W_conv_layer1) + b_conv_layer1)
-    return h_conv_layer1
+    #W_conv_layer1 = weight_variable([filtersize, filtersize, outputdepth, outputdepth])
+    #b_conv_layer1 = bias_variable([outputdepth])
+    #h_conv_layer1 = tf.nn.relu(conv2d(h_deconv_layer1, W_conv_layer1) + b_conv_layer1)
+    return h_deconv_layer1
+
+def final_deconv_layer(input, filtersize, inputdepth, outputdepth):
+    height = 2 * int(input.get_shape()[1])
+    width = 2 * int(input.get_shape()[2])
+
+    W_deconv_layer1 = weight_variable([filtersize, filtersize, outputdepth, inputdepth])
+    b_deconv_layer1 = bias_variable([outputdepth])
+    h_deconv_layer1 = tf.nn.relu(deconv2d(input, height, width, outputdepth, W_deconv_layer1) + b_deconv_layer1);
+
+    #W_conv_layer1 = weight_variable([filtersize, filtersize, outputdepth, outputdepth])
+    #b_conv_layer1 = bias_variable([outputdepth])
+    #h_conv_layer1 = tf.nn.relu(conv2d(h_deconv_layer1, W_conv_layer1) + b_conv_layer1)
+    return h_deconv_layer1
 
 def frame_interpolator(image_shape):
+    print("I was called!")
     x = tf.placeholder(tf.float32, [image_shape[0], image_shape[1], image_shape[2], 2*image_shape[3]], name='x') # input is two images
     y = tf.placeholder(tf.float32, image_shape, name='y')
 
-    layer_depths = [20, 40, 80, 160, 160]
+    layer_depths = [20, 40, 80, 160, 320]
     filter_sizes = [3, 3, 3, 3, 3]
+    #layer_depths = [20]
+    #filter_sizes = [3]
     conv_outputs = []
 
     current_input = x
@@ -83,11 +102,9 @@ def frame_interpolator(image_shape):
 
     return {'x':x, 'y':y, 'z':z, 'yhat':yhat, 'loss':loss}
 
+
 def test_frame_interpolator():
     import data_loader
-    import matplotlib
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
 
     downsample_factor = 2
     dataset = data_loader.read_data_set(downsample_factor)
@@ -111,7 +128,7 @@ def test_frame_interpolator():
 
     # Fit all the training data
     batch_size = 10
-    n_epochs = 100
+    n_epochs = 10
     n_examples = dataset.test.num_examples
     for epoch_i in range(n_epochs):
         for batch_i in range(dataset.train.num_examples // batch_size):
@@ -119,7 +136,12 @@ def test_frame_interpolator():
             batch_xs, batch_ys = dataset.train.next_batch(batch_size)
             train_xs = np.array([img - np.tile(mean_img,[1,1,2]) for img in batch_xs])
             train_ys = np.array([img - mean_img for img in batch_ys])
-
+            # print(batch_xs.shape, batch_ys.shape)
+            # fig, axs = plt.subplots(3, 1, figsize=(12, 8))
+            # axs[0].imshow(batch_xs[0,:,:,0:3]/255)
+            # axs[1].imshow(batch_xs[0,:,:,3:]/255)
+            # axs[2].imshow(batch_ys[0,:,:,:]/255)
+            # plt.show()
             sess.run(optimizer, feed_dict={fi['x']: train_xs, fi['y']: train_ys})
 
             # train_perf.append(sess.run(fi['loss'], feed_dict={fi['x']: train_xs, fi['y']: train_ys}))
