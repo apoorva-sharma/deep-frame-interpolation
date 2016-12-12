@@ -23,7 +23,8 @@ def compute_medians(saved_frames,window_size):
     num_frames = saved_frames.shape[0]
     frame_shape = saved_frames[1,:,:,:].shape
     frame_size = saved_frames[1,:,:,:].size
-    medians = 0*saved_frames
+    # medians = np.tile(saved_frames[1,:,:,:], [num_frames,1,1,1])
+    medians = []
     for i in range(num_frames):
         window_inds = range(max(i-window_size//2,0),
             min(i+window_size//2 + 1,num_frames))
@@ -31,9 +32,9 @@ def compute_medians(saved_frames,window_size):
          [-1, frame_size])
         median_frame = np.median(oned_frames, axis=0)
         median_frame = np.reshape(median_frame, frame_shape)
-        medians[i] = median_frame
+        medians.append(median_frame)
 
-    return medians[:-1,:,:,:]
+    return np.array(medians)[:-1,:,:,:]
 
 
 def compile_input_data(saved_frames):
@@ -44,13 +45,15 @@ def compile_input_data(saved_frames):
     before_frames = saved_frames[0:-1,:,:,:]
     after_frames = saved_frames[1:,:,:,:]
 
-    oned_frames = np.reshape(saved_frames, [-1, frame_size])
-    median_frame = np.median(oned_frames, axis=0)
-    median_frame = np.reshape(median_frame, frame_shape)
+    # oned_frames = np.reshape(saved_frames, [-1, frame_size])
+    # median_frame = np.median(oned_frames, axis=0)
+    # median_frame = np.reshape(median_frame, frame_shape)
 
-    medians = np.tile(median_frame, [n_frames-1,1,1,1])
+    # medians1 = np.tile(median_frame, [n_frames-1,1,1,1])
 
-    # medians = compute_medians(saved_frames,1000)
+    medians = compute_medians(saved_frames,20)
+
+    # print(np.sum(medians - medians1))
 
     # before_norm = 255 - before_frames
     # after_norm = 255 - after_frames
