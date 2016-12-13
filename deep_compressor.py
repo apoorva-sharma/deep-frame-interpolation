@@ -19,6 +19,23 @@ def normalize_frames(frames, medians):
 def unnormalize_frames(frames, medians):
     return frames + medians
 
+def compute_medians(saved_frames,window_size):
+    num_frames = saved_frames.shape[0]
+    frame_shape = saved_frames[1,:,:,:].shape
+    frame_size = saved_frames[1,:,:,:].size
+    # medians = np.tile(saved_frames[1,:,:,:], [num_frames,1,1,1])
+    medians = []
+    for i in range(num_frames):
+        window_inds = range(max(i-window_size//2,0),
+            min(i+window_size//2 + 1,num_frames))
+        oned_frames = np.reshape(saved_frames[window_inds,:,:,:],
+         [-1, frame_size])
+        median_frame = np.median(oned_frames, axis=0)
+        median_frame = np.reshape(median_frame, frame_shape)
+        medians.append(median_frame)
+
+    return np.array(medians)[:-1,:,:,:]
+
 
 def compile_input_data(saved_frames):
     frame_shape = saved_frames[1,:,:,:].shape
@@ -28,11 +45,15 @@ def compile_input_data(saved_frames):
     before_frames = saved_frames[0:-1,:,:,:]
     after_frames = saved_frames[1:,:,:,:]
 
-    oned_frames = np.reshape(saved_frames, [-1, frame_size])
-    median_frame = np.median(oned_frames, axis=0)
-    median_frame = np.reshape(median_frame, frame_shape)
+    # oned_frames = np.reshape(saved_frames, [-1, frame_size])
+    # median_frame = np.median(oned_frames, axis=0)
+    # median_frame = np.reshape(median_frame, frame_shape)
 
-    medians = np.tile(median_frame, [n_frames-1,1,1,1])
+    # medians1 = np.tile(median_frame, [n_frames-1,1,1,1])
+
+    medians = compute_medians(saved_frames,20)
+
+    # print(np.sum(medians - medians1))
 
     # before_norm = 255 - before_frames
     # after_norm = 255 - after_frames
@@ -49,7 +70,7 @@ def load_video(input_video_dir):
 
     frames = []
 
-    downsample_factor = 2
+    downsample_factor = 1
     # load data into train_inputs/targets
     for i in range(0,len(image_paths)):
         frame = np.array(misc.imread(image_paths[i]))
@@ -83,7 +104,7 @@ def network_trainer(training_inputs, training_targets, sess):
     sess.run(tf.initialize_all_variables())
 
     # Fit all the training data
-    n_epochs = 150
+    n_epochs = 200
     n_examples = training_inputs.shape[0]
     print(n_examples)
     batch_size = 7
@@ -113,11 +134,10 @@ def decompress(saved_frames, trained_net, sess):
     network_outputs = sess.run(trained_net['yhat'], 
         feed_dict={trained_net['x']: network_inputs})
 
-    # import scipy.io
-    # scipy.io.savemat('networkout.mat', mdict={'network_outputs': network_outputs,
-    #     'medians':medians})
-
     output_frames = unnormalize_frames(network_outputs, medians)
+    import scipy.io
+    scipy.io.savemat('networkout_gen2.mat', mdict={'frames_to_save': saved_frames,
+        'outputs':output_frames})
 
     # img_width = output_frames[1,:,:,:].shape[1]
     # fig, axs = plt.subplots(3, 4, figsize=(12, 8))
@@ -169,20 +189,20 @@ def save_vid(vid_frames, filename):
     return ani
 
 def main():
-    video_data = load_video('./SampleVid')
+    video_data = load_video('./SampleVid4')
     sess = tf.Session()
-    #trained_net = network_trainer(video_data['training_inputs'], 
-         #video_data['training_targets'], sess)
-    trained_net = frame_interpolator([None,192,192,3])
+    # trained_net = network_trainer(video_data['training_inputs'], 
+    #      video_data['training_targets'], sess)
+    trained_net = frame_interpolator([None,384,384,3])
     saver = tf.train.Saver()
-    #save_path = saver.save(sess, "saved_net.ckpt")
-    #print("Model saved in file: %s" % save_path)
-    saver.restore(sess, "saved_net_sample_vid.ckpt")
+    # save_path = saver.save(sess, "saved_net.ckpt")
+    # print("Model saved in file: %s" % save_path)
+    saver.restore(sess, "saved_net_samplevid2.ckpt")
 
     recon_vid = decompress(video_data['frames_to_save'],
         trained_net, sess)
 
-    save_vid(recon_vid, "test.mp4")
+    save_vid(recon_vid, "generalization_test2.mp4")
 
 
 
