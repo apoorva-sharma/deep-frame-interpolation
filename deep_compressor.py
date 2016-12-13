@@ -193,6 +193,7 @@ def main():
     video_data = load_video('./SampleVid3')
     sess = tf.Session()
 <<<<<<< HEAD
+<<<<<<< HEAD
     trained_net = network_trainer(video_data['training_inputs'], 
          video_data['training_targets'], sess)
     # trained_net = frame_interpolator([None,192,192,3])
@@ -215,6 +216,16 @@ def main():
     saver.restore(sess, "saved_net_sample_vid.ckpt")
 
 >>>>>>> 30be2d9... added video rendering
+=======
+    #trained_net = network_trainer(video_data['training_inputs'], 
+         #video_data['training_targets'], sess)
+    trained_net = frame_interpolator([None,192,192,3])
+    saver = tf.train.Saver()
+    #save_path = saver.save(sess, "saved_net.ckpt")
+    #print("Model saved in file: %s" % save_path)
+    saver.restore(sess, "saved_net_sample_vid.ckpt")
+
+>>>>>>> origin/master
     recon_vid = decompress(video_data['frames_to_save'],
         trained_net, sess)
 
