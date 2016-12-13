@@ -89,3 +89,15 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+IMG_4438.MOV
+
+*.MOV
+
+*.mat
+
+*.png
+
+*.mp4
+
+*.p
