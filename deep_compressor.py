@@ -190,7 +190,7 @@ def save_vid(vid_frames, filename):
     return ani
 
 def main():
-    video_data = load_video('./SampleVid2')
+    video_data = load_video('./SampleVid3')
     sess = tf.Session()
 <<<<<<< HEAD
     trained_net = network_trainer(video_data['training_inputs'], 
