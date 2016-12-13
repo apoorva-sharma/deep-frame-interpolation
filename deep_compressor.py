@@ -25,7 +25,10 @@ def compute_medians(saved_frames,window_size):
     frame_size = saved_frames[1,:,:,:].size
     # medians = np.tile(saved_frames[1,:,:,:], [num_frames,1,1,1])
     medians = []
+<<<<<<< HEAD
 
+=======
+>>>>>>> 2039a75dff6f201f351fbff5c7cbdb9748e787f6
     for i in range(num_frames):
         window_inds = range(max(i-window_size//2,0),
             min(i+window_size//2 + 1,num_frames))
@@ -46,8 +49,21 @@ def compile_input_data(saved_frames):
     before_frames = saved_frames[0:-1,:,:,:]
     after_frames = saved_frames[1:,:,:,:]
 
+<<<<<<< HEAD
     medians = compute_medians(saved_frames,20)
 
+=======
+    # oned_frames = np.reshape(saved_frames, [-1, frame_size])
+    # median_frame = np.median(oned_frames, axis=0)
+    # median_frame = np.reshape(median_frame, frame_shape)
+
+    # medians1 = np.tile(median_frame, [n_frames-1,1,1,1])
+
+    medians = compute_medians(saved_frames,20)
+
+    # print(np.sum(medians - medians1))
+
+>>>>>>> 2039a75dff6f201f351fbff5c7cbdb9748e787f6
     # before_norm = 255 - before_frames
     # after_norm = 255 - after_frames
     before_norm = normalize_frames(before_frames, medians)
@@ -150,6 +166,7 @@ def decompress(saved_frames, trained_net, sess):
     full_recon_vid[1:-1:2,:,:,:] = output_frames
 
     return full_recon_vid
+
 
 def save_vid(vid_frames, filename):
     dpi = 100
