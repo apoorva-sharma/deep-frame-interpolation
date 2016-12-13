@@ -26,15 +26,21 @@ def compute_medians(frames, window_size):
     frame_shape = frames[1,:,:,:].shape
     frame_size = frames[1,:,:,:].size
 
-    medians = []
-    for i in range(num_frames):
-        window_inds = range(max(i-window_size//2,0),
-            min(i+window_size//2 + 1,num_frames))
-        oned_frames = np.reshape(frames[window_inds,:,:,:],
+    # medians = []
+    # for i in range(num_frames):
+    #     window_inds = range(max(i-window_size//2,0),
+    #         min(i+window_size//2 + 1,num_frames))
+    #     oned_frames = np.reshape(frames[window_inds,:,:,:],
+    #      [-1, frame_size])
+    #     median_frame = np.median(oned_frames, axis=0)
+    #     median_frame = np.reshape(median_frame, frame_shape)
+    #     medians.append(median_frame)
+
+    oned_frames = np.reshape(frames,
          [-1, frame_size])
-        median_frame = np.median(oned_frames, axis=0)
-        median_frame = np.reshape(median_frame, frame_shape)
-        medians.append(median_frame)
+    median_frame = np.median(oned_frames, axis=0)
+    median_frame = np.reshape(median_frame, frame_shape)
+    medians = np.tile(median_frame, [num_frames, 1,1,1])
 
     return np.array(medians)
 
@@ -57,7 +63,7 @@ def load_video(input_video_dir):
 
     frames = []
 
-    downsample_factor = 2
+    downsample_factor = 1
     # load data into train_inputs/targets
     for i in range(0,len(image_paths)):
         frame = np.array(misc.imread(image_paths[i]))
@@ -88,16 +94,10 @@ def create_datasets(frames):
 
     return {"downsampled": downsampled, "training_inputs": training_inputs,
             "training_targets": training_targets, "test_inputs": test_inputs,
-            "test_targets": test_targets}
+            "test_targets": test_targets, "medians":medians}
 
-def train_network(fi, training_inputs, training_targets, sess):
-    learning_rate = 0.01
-    optimizer = tf.train.AdagradOptimizer(learning_rate).minimize(fi['loss'])
-
-    sess.run(tf.initialize_all_variables())
-
+def train_network(fi, optimizer, training_inputs, training_targets, n_epochs, sess):
     # Fit all the training data
-    n_epochs = 10
     n_examples = training_inputs.shape[0]
     print(n_examples)
     batch_size = 20
@@ -164,23 +164,32 @@ def save_vid(vid_frames, filename):
 
 def main(retrain=True):
     print('Loading frame data...')
-    frames = load_video('./SampleVid5')
+    frames = load_video('./football')
     datasets = create_datasets(frames)
 
     sess = tf.Session()
     img_width = frames[0,:,:,:].shape[1]
     fi = frame_interpolator([None,img_width,img_width,3])
+
+    learning_rate = 0.01
+    optimizer = tf.train.AdagradOptimizer(learning_rate).minimize(fi['loss'])
+
     saver = tf.train.Saver()
 
     if retrain:
         print('Training network...')
-        train_network(fi, datasets['training_inputs'], 
-              datasets['training_targets'], sess)
+        sess.run(tf.initialize_all_variables())
+        train_network(fi, optimizer, datasets['training_inputs'], 
+              datasets['training_targets'], 200, sess)
         save_path = saver.save(sess, "saved_net.ckpt")
         print("Model saved in file: %s" % save_path)
     else:
         print('Loading network from file...')
         saver.restore(sess, "saved_net.ckpt")
+        train_network(fi, optimizer, datasets['training_inputs'], 
+              datasets['training_targets'], 50, sess)
+        save_path = saver.save(sess, "saved_net.ckpt")
+        print("Model saved in file: %s" % save_path)
 
     # evaluate performance on test set
     test_loss = sess.run(fi['loss'], feed_dict={fi['x']: datasets['test_inputs'],
@@ -191,6 +200,8 @@ def main(retrain=True):
     print('Saving video...')
     upsampled_frames = upsample(datasets['downsampled'], fi, sess)
     save_vid(upsampled_frames, "upsampled.mp4")
+    compression_frames = upsample(datasets['downsampled'][::2,:,:,:], fi, sess)
+    save_vid(compression_frames, "compression.mp4")
 
     print('Saving datasets as .mat...')
     # save train and test outputs to matlab files
@@ -201,6 +212,7 @@ def main(retrain=True):
                                                     fi['y']: datasets['training_targets']})
     datasets['train_outputs'] = train_outputs
     datasets['test_outputs'] = test_outputs
+    datasets['all_frames'] = frames
     scipy.io.savemat('all_data.mat', mdict=datasets)
 
 
@@ -208,4 +220,4 @@ def main(retrain=True):
 
 
 if __name__ == '__main__':
-    main()
+    main(True)
