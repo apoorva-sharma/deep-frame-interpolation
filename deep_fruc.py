@@ -5,13 +5,15 @@ import glob
 import msssim
 from scipy import misc
 import matplotlib.animation as animation
-from pylab import *
 
 from frame_interpolator import *
 
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+
+from pylab import *
+
 
 def normalize_frames(frames, medians):
     return frames - medians
@@ -55,7 +57,7 @@ def load_video(input_video_dir):
 
     frames = []
 
-    downsample_factor = 1
+    downsample_factor = 2
     # load data into train_inputs/targets
     for i in range(0,len(image_paths)):
         frame = np.array(misc.imread(image_paths[i]))
@@ -91,6 +93,8 @@ def create_datasets(frames):
 def train_network(fi, training_inputs, training_targets, sess):
     learning_rate = 0.01
     optimizer = tf.train.AdagradOptimizer(learning_rate).minimize(fi['loss'])
+
+    sess.run(tf.initialize_all_variables())
 
     # Fit all the training data
     n_epochs = 10
@@ -170,7 +174,6 @@ def main(retrain=True):
 
     if retrain:
         print('Training network...')
-        sess.run(tf.initialize_all_variables())
         train_network(fi, datasets['training_inputs'], 
               datasets['training_targets'], sess)
         save_path = saver.save(sess, "saved_net.ckpt")

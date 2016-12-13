@@ -102,5 +102,7 @@ IMG_4438.MOV
 
 *.p
 
-*.ckpt*
+*.ckpt
+
+*.ckpt.meta
 
