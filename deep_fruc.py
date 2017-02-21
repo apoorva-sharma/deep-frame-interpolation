@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 import math
 import glob
-import msssim
+#import msssim
 from scipy import misc
 import matplotlib.animation as animation
 
@@ -118,11 +118,11 @@ def train_network(fi, optimizer, training_inputs, training_targets, n_epochs, se
 def upsample(saved_frames, trained_net, sess):
     # compute median and missing frames
     (network_inputs, medians) = compile_input_data(saved_frames[:-1,:,:,:],saved_frames[1:,:,:,:])
-    network_outputs = sess.run(trained_net['yhat'], 
+    network_outputs = sess.run(trained_net['yhat'],
         feed_dict={trained_net['x']: network_inputs})
 
     output_frames = unnormalize_frames(network_outputs, medians)
-    
+
     # interleave saved frames with generated frames
     full_recon_vid_shape = list(saved_frames.shape)
     full_recon_vid_shape[0] = full_recon_vid_shape[0]*2 - 1
@@ -164,7 +164,7 @@ def save_vid(vid_frames, filename):
 
 def main(retrain=True):
     print('Loading frame data...')
-    frames = load_video('./football')
+    frames = load_video('./stefan')
     datasets = create_datasets(frames)
 
     sess = tf.Session()
@@ -179,14 +179,14 @@ def main(retrain=True):
     if retrain:
         print('Training network...')
         sess.run(tf.initialize_all_variables())
-        train_network(fi, optimizer, datasets['training_inputs'], 
+        train_network(fi, optimizer, datasets['training_inputs'],
               datasets['training_targets'], 200, sess)
         save_path = saver.save(sess, "saved_net.ckpt")
         print("Model saved in file: %s" % save_path)
     else:
         print('Loading network from file...')
         saver.restore(sess, "saved_net.ckpt")
-        train_network(fi, optimizer, datasets['training_inputs'], 
+        train_network(fi, optimizer, datasets['training_inputs'],
               datasets['training_targets'], 50, sess)
         save_path = saver.save(sess, "saved_net.ckpt")
         print("Model saved in file: %s" % save_path)

@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 import math
 import glob
-import msssim
+#import msssim
 from scipy import misc
 import matplotlib.animation as animation
 from pylab import *
@@ -25,10 +25,7 @@ def compute_medians(saved_frames,window_size):
     frame_size = saved_frames[1,:,:,:].size
     # medians = np.tile(saved_frames[1,:,:,:], [num_frames,1,1,1])
     medians = []
-<<<<<<< HEAD
 
-=======
->>>>>>> 2039a75dff6f201f351fbff5c7cbdb9748e787f6
     for i in range(num_frames):
         window_inds = range(max(i-window_size//2,0),
             min(i+window_size//2 + 1,num_frames))
@@ -49,23 +46,8 @@ def compile_input_data(saved_frames):
     before_frames = saved_frames[0:-1,:,:,:]
     after_frames = saved_frames[1:,:,:,:]
 
-<<<<<<< HEAD
     medians = compute_medians(saved_frames,20)
 
-=======
-    # oned_frames = np.reshape(saved_frames, [-1, frame_size])
-    # median_frame = np.median(oned_frames, axis=0)
-    # median_frame = np.reshape(median_frame, frame_shape)
-
-    # medians1 = np.tile(median_frame, [n_frames-1,1,1,1])
-
-    medians = compute_medians(saved_frames,20)
-
-    # print(np.sum(medians - medians1))
-
->>>>>>> 2039a75dff6f201f351fbff5c7cbdb9748e787f6
-    # before_norm = 255 - before_frames
-    # after_norm = 255 - after_frames
     before_norm = normalize_frames(before_frames, medians)
     after_norm = normalize_frames(after_frames, medians)
 
@@ -108,8 +90,6 @@ def network_trainer(training_inputs, training_targets, sess):
     learning_rate = 0.01
     optimizer = tf.train.AdagradOptimizer(learning_rate).minimize(fi['loss'])
 
-    # sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
-    # sess = tf.Session()
     sess.run(tf.initialize_all_variables())
 
     # Fit all the training data
@@ -140,7 +120,7 @@ def network_trainer(training_inputs, training_targets, sess):
 def decompress(saved_frames, trained_net, sess):
     # compute median and missing frames
     (network_inputs, medians) = compile_input_data(saved_frames)
-    network_outputs = sess.run(trained_net['yhat'], 
+    network_outputs = sess.run(trained_net['yhat'],
         feed_dict={trained_net['x']: network_inputs})
 
     output_frames = unnormalize_frames(network_outputs, medians)
@@ -200,7 +180,7 @@ def main():
     video_data = load_video('./SampleVid4')
     sess = tf.Session()
 
-    #trained_net = network_trainer(video_data['training_inputs'], 
+    #trained_net = network_trainer(video_data['training_inputs'],
          #video_data['training_targets'], sess)
     trained_net = frame_interpolator([None,192,192,3])
     saver = tf.train.Saver()

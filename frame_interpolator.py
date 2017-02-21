@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import math
-import msssim
+#import msssim
 import matplotlib
 #matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -90,7 +90,7 @@ def frame_interpolator(image_shape):
     # deconv portion
     for i, outputdepth in enumerate(layer_depths[1:]): # reverse process exactly until last step
         result = deconv_layer(current_input, filter_sizes[i], current_inputdepth, outputdepth)
-        stack = tf.concat(3,[result, conv_outputs[i+1]])
+        stack = tf.concat([result, conv_outputs[i+1]],3)
         current_input = stack
         current_inputdepth = 2*outputdepth
 
