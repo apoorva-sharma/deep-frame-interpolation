@@ -178,7 +178,7 @@ def main(retrain=True):
 
     if retrain:
         print('Training network...')
-        sess.run(tf.initialize_all_variables())
+        sess.run(tf.global_variables_initializer())
         train_network(fi, optimizer, datasets['training_inputs'],
               datasets['training_targets'], 200, sess)
         save_path = saver.save(sess, "saved_net.ckpt")
