@@ -26,25 +26,27 @@ def deconv2d(x, width, height, outputdepth, W):
 def max_pool_2x2(x):
     return tf.nn.max_pool(x, ksize=[1, 2, 2, 1],strides=[1, 2, 2, 1], padding='SAME')
 
-def conv_layer(input, filtersize, inputdepth, outputdepth):
-    W_conv_layer1 = weight_variable([filtersize, filtersize, inputdepth, outputdepth])
-    b_conv_layer1 = bias_variable([outputdepth])
-    h_conv_layer1 = tf.nn.relu(conv2d(input, W_conv_layer1) + b_conv_layer1)
-    max_pool1 = max_pool_2x2(h_conv_layer1)
-    return max_pool1
+def conv_layer(input, filtersize, inputdepth, outputdepth, name="conv2d"):
+    with tf.variable_scope(name):
+        W_conv_layer1 = weight_variable([filtersize, filtersize, inputdepth, outputdepth])
+        b_conv_layer1 = bias_variable([outputdepth])
+        h_conv_layer1 = tf.nn.relu(conv2d(input, W_conv_layer1) + b_conv_layer1)
+        max_pool1 = max_pool_2x2(h_conv_layer1)
+        return max_pool1
 
-def deconv_layer(input, filtersize, inputdepth, outputdepth):
-    height = 2 * int(input.get_shape()[1])
-    width = 2 * int(input.get_shape()[2])
+def deconv_layer(input, filtersize, inputdepth, outputdepth, name="deconv2d"):
+    with tf.variable_scope(name):
+        height = 2 * int(input.get_shape()[1])
+        width = 2 * int(input.get_shape()[2])
 
-    W_deconv_layer1 = weight_variable([filtersize, filtersize, outputdepth, inputdepth])
-    b_deconv_layer1 = bias_variable([outputdepth])
-    h_deconv_layer1 = tf.nn.relu(deconv2d(input, height, width, outputdepth, W_deconv_layer1) + b_deconv_layer1)
+        W_deconv_layer1 = weight_variable([filtersize, filtersize, outputdepth, inputdepth])
+        b_deconv_layer1 = bias_variable([outputdepth])
+        h_deconv_layer1 = tf.nn.relu(deconv2d(input, height, width, outputdepth, W_deconv_layer1) + b_deconv_layer1)
 
-    #W_conv_layer1 = weight_variable([filtersize, filtersize, outputdepth, outputdepth])
-    #b_conv_layer1 = bias_variable([outputdepth])
-    #h_conv_layer1 = tf.nn.relu(conv2d(h_deconv_layer1, W_conv_layer1) + b_conv_layer1)
-    return h_deconv_layer1
+        #W_conv_layer1 = weight_variable([filtersize, filtersize, outputdepth, outputdepth])
+        #b_conv_layer1 = bias_variable([outputdepth])
+        #h_conv_layer1 = tf.nn.relu(conv2d(h_deconv_layer1, W_conv_layer1) + b_conv_layer1)
+        return h_deconv_layer1
 
 def final_deconv_layer(input, filtersize, inputdepth, outputdepth):
     height = 2 * int(input.get_shape()[1])
@@ -60,6 +62,7 @@ def final_deconv_layer(input, filtersize, inputdepth, outputdepth):
     #b_conv_layer1 = bias_variable([outputdepth])
     #h_conv_layer1 = tf.nn.relu(conv2d(h_deconv_layer1, W_conv_layer1) + b_conv_layer1)
     return h_deconv_layer1
+
 
 def frame_interpolator(image_shape):
     print("I was called!")

@@ -6,7 +6,7 @@ import glob
 from scipy import misc
 import matplotlib.animation as animation
 
-from frame_interpolator import *
+from frame_interpolator_gan import *
 
 import matplotlib
 matplotlib.use('Agg')
@@ -112,8 +112,34 @@ def train_network(fi, optimizer, training_inputs, training_targets, n_epochs, se
             sess.run(optimizer, feed_dict={fi['x']: batch_xs, fi['y']: batch_ys})
 
         print(epoch_i, sess.run(fi['loss'], feed_dict={fi['x']: training_inputs, fi['y']: training_targets}))
-
     return
+
+def train_dcgan(fi, training_inputs, training_targets, n_epochs, sess):
+    n_examples = training_inputs.shape[0]
+    print(n_examples)
+    batch_size = 20
+    for epoch_i in range(n_epochs):
+        shuffled_inds = np.random.permutation(n_examples)
+        for batch_i in range(n_examples // batch_size):
+            batch_inds = range(batch_i*batch_size, (batch_i+1)*batch_size)
+            batch_inds = shuffled_inds[batch_inds]
+            batch_xs = training_inputs[batch_inds,:,:,:]
+            batch_ys = training_targets[batch_inds,:,:,:]
+
+            # update D
+            sess.run(fi['d_optim'],
+                feed_dict={fi['x']: batch_xs, fi['y']: batch_ys})
+
+            # update G
+            sess.run(fi['g_optim'],
+                feed_dict={ fi['x']: batch_xs });
+            sess.run(fi['g_optim'],
+                feed_dict={ fi['x']: batch_xs });
+
+
+        print(epoch_i, sess.run(fi['g_loss'], feed_dict={fi['x']: training_inputs}))
+        print("   ", sess.run(fi['d_loss'], feed_dict={fi['x']: training_inputs, fi['y']: training_targets}))
+
 
 def upsample(saved_frames, trained_net, sess):
     # compute median and missing frames
@@ -169,33 +195,34 @@ def main(retrain=True):
 
     sess = tf.Session()
     img_width = frames[0,:,:,:].shape[1]
-    fi = frame_interpolator([None,img_width,img_width,3])
 
-    learning_rate = 0.01
-    optimizer = tf.train.AdagradOptimizer(learning_rate).minimize(fi['loss'])
+    dcgan = DCGAN(sess)
+    fi = dcgan.frame_interpolator([None,img_width,img_width,3])
 
     saver = tf.train.Saver()
 
     if retrain:
         print('Training network...')
         sess.run(tf.global_variables_initializer())
-        train_network(fi, optimizer, datasets['training_inputs'],
-              datasets['training_targets'], 200, sess)
+        train_dcgan(fi, datasets['training_inputs'],
+              datasets['training_targets'], 50, sess)
         save_path = saver.save(sess, "saved_net.ckpt")
         print("Model saved in file: %s" % save_path)
     else:
         print('Loading network from file...')
         saver.restore(sess, "saved_net.ckpt")
-        train_network(fi, optimizer, datasets['training_inputs'],
+        train_dcgan(fi, datasets['training_inputs'],
               datasets['training_targets'], 50, sess)
         save_path = saver.save(sess, "saved_net.ckpt")
         print("Model saved in file: %s" % save_path)
 
     # evaluate performance on test set
-    test_loss = sess.run(fi['loss'], feed_dict={fi['x']: datasets['test_inputs'],
+    test_d_loss = sess.run(fi['d_loss'], feed_dict={fi['x']: datasets['test_inputs'],
                                                 fi['y']: datasets['test_targets']})
 
-    print('Test Loss:', test_loss)
+    test_g_loss = sess.run(fi['g_loss'], feed_dict={fi['x']: datasets['test_inputs']})
+
+    print('Test Loss: d:', test_d_loss, 'g:', test_g_loss)
 
     print('Saving video...')
     upsampled_frames = upsample(datasets['downsampled'], fi, sess)
